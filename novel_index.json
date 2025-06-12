@@ -1,0 +1,15 @@
+{
+  "name": "NovelBin",
+  "version": "1.0.0",
+  "lang": "en",
+  "nsfw": false,
+  "sources": [
+    {
+      "name": "NovelBin",
+      "filename": "novelbin.kt",
+      "lang": "en",
+      "version": 1,
+      "path": "extensions/novelbin/"
+    }
+  ]
+}
