@@ -1,15 +1,17 @@
-{
-  "name": "NovelBin",
-  "version": "1.0.0",
-  "lang": "en",
-  "nsfw": false,
-  "sources": [
-    {
-      "name": "NovelBin",
-      "filename": "novelbin.kt",
-      "lang": "en",
-      "version": 1,
-      "path": "extensions/novelbin/"
-    }
-  ]
-}
+[
+  {
+    "name": "NovelBin",
+    "baseUrl": "https://novelbin.com",
+    "lang": "en",
+    "version": "1.0.0",
+    "isNsfw": false,
+    "typeSource": "novel",
+    "sourceCodeUrl": "https://github.com/plaanteverte/novelbin-ext-test/blob/main/extensions/novelbin/novelbin.kt",
+    "iconUrl": "",
+    "hasCloudflare": false,
+    "appMinVerReq": "0.5.0",
+    "sourceCodeLanguage": 0,
+    "itemType": 2,
+    "isFullData": true
+  }
+]
