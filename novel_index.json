@@ -16,7 +16,7 @@
         "isManga": false,
         "itemType": 2,
         "isFullData": false,
-        "appMinVerReq": "0.0.0",
+        "appMinVerReq": "0.0.1",
         "additionalParams": "",
         "sourceCodeLanguage": 1,
         "notes": ""
