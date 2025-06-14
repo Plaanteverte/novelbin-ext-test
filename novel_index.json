@@ -16,7 +16,7 @@
     "isManga": false,
     "itemType": 2,
     "isFullData": false,
-    "appMinVerReq": "0.5.0",
+    "appMinVerReq": "0.6.0",
     "additionalParams": "",
     "sourceCodeLanguage": 0,
     "path": "extensions/novelbin/",
