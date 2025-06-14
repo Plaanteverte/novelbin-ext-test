@@ -12,7 +12,7 @@
     "hasCloudflare": false,
     "sourceCodeUrl": "https://raw.githubusercontent.com/Plaanteverte/novelbin-ext-test/refs/heads/main/extensions/novelbin/novelbin.dart",
     "apiUrl": "",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "isManga": false,
     "itemType": 2,
     "isFullData": false,
