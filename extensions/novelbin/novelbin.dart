@@ -78,23 +78,21 @@ Future<List<SChapter>> getChapters(String url) async {
   final fullUrl = url.startsWith('http') ? url : source.baseUrl + url;
   final res = (await client.get(Uri.parse(fullUrl), headers: headers)).body;
 
-  // XPath pour récupérer tous les <li> dans toutes les <ul class="list-chapter">
-  final chapterListItems = xpath(res, '//ul[contains(@class, "list-chapter")]/li');
+  final document = parse(res);
+
+  // Sélectionne tous les <li> sous ul.list-chapter
+  final lis = document.querySelectorAll('ul.list-chapter > li');
 
   List<SChapter> chapters = [];
 
-  for (var liHtml in chapterListItems) {
-    // Pour chaque li, on récupère le href du <a> et le texte du <span class="chapter-title">
-    final document = parse(liHtml); // parser le fragment HTML du <li>
-
-    final aTag = document.querySelector('a');
-    final spanTitle = document.querySelector('span.chapter-title');
+  for (var li in lis) {
+    final aTag = li.querySelector('a');
+    final spanTitle = li.querySelector('span.chapter-title');
 
     if (aTag != null && spanTitle != null) {
       String chapterUrl = aTag.attributes['href'] ?? '';
       String chapterName = spanTitle.text.trim();
 
-      // Convertir lien absolu en relatif
       if (chapterUrl.startsWith('http')) {
         final uri = Uri.parse(chapterUrl);
         chapterUrl = uri.path + (uri.hasQuery ? '?${uri.query}' : '');
