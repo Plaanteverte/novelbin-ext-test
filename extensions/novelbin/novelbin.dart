@@ -41,10 +41,7 @@ class NovelBinSource extends MProvider {
 
   @override
   Future<MManga> getDetail(String url) async {
-    throw Exception("DEBUG: getDetail appelé avec URL = $url");
-
     final res = (await client.get(Uri.parse(url), headers: headers)).body;
-
     final title = xpath(res, '//meta[@property="og:title"]/@content').firstOrNull ?? "No Title";
     final description = xpath(res, '//meta[@name="description"]/@content').firstOrNull ?? "";
     final imageUrl = xpath(res, '//meta[@property="og:image"]/@content').firstOrNull ?? "";
