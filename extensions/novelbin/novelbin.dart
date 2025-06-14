@@ -18,35 +18,34 @@ class NovelBinSource extends MProvider {
 
   // 1) Popular
   @override
-  Future<MPages> getPopular(int page) async {
-    final url = '${source.baseUrl}/sort/top-hot-novel?page=$page';
-    final res = (await client.get(Uri.parse(url), headers: headers)).body;
+Future<MPages> getPopular(int page) async {
+  final url = '${source.baseUrl}/sort/top-hot-novel?page=$page';
+  final res = (await client.get(Uri.parse(url), headers: headers)).body;
 
-    // Scraping titres, liens, couvertures
-    final titles = xpath(res, '//h3[contains(@class, "novel") and contains(@class, "title")]/a/text()');
-    final links = xpath(res, '//h3[contains(@class, "novel") and contains(@class, "title")]/a/@href');
-    final covers = xpath(res, '//img[contains(@class, "cover") and contains(@class, "lazy")]/@data-src');
+  final titles = xpath(res, '//h3[contains(@class, "novel") and contains(@class, "title")]/a/text()');
+  final links = xpath(res, '//h3[contains(@class, "novel") and contains(@class, "title")]/a/@href');
+  final covers = xpath(res, '//img[contains(@class, "cover") and contains(@class, "lazy")]/@data-src');
 
-    List<MManga> mangaList = [];
+  List<MManga> mangaList = [];
 
-    for (var i = 0; i < titles.length; i++) {
-      MManga manga = MManga();
-      manga.name = titles[i];
+  for (var i = 0; i < titles.length; i++) {
+  MManga manga = MManga();
+  manga.name = titles[i];
 
-      // **Important** : garder uniquement la partie relative (ex: /b/dungeon-diver-stealing-a-monsters-power)
-      var link = links[i];
-      if (link.startsWith('http')) {
-        final uri = Uri.parse(link);
-        link = uri.path;  // Garde juste la route relative
-      }
-
-      manga.link = link;
-      manga.imageUrl = covers.length > i ? covers[i] : "";
-      mangaList.add(manga);
-    }
-
-    return MPages(mangaList, true);
+  var link = links[i];
+  if (link.startsWith('http')) {
+    final uri = Uri.parse(link);
+    link = uri.path; // ✅ garde uniquement le chemin
   }
+
+  manga.link = link; // ✅ pas de baseUrl ici !
+  manga.imageUrl = covers.length > i ? covers[i] : "";
+  mangaList.add(manga);
+}
+
+  return MPages(mangaList, true);
+}
+
 
   // 2) Detail
   @override
@@ -75,49 +74,41 @@ class NovelBinSource extends MProvider {
   // 3) Chapters - récupère la liste des chapitres à partir de la page manga
 @override
 Future<List<SChapter>> getChapters(String url) async {
-  final fullUrl = url.startsWith('http') ? url : source.baseUrl + url;
-  final res = (await client.get(Uri.parse(fullUrl), headers: headers)).body;
+  print('✅ getChapters called with URL: $url');
 
-  final chapterListItems = xpath(res, '//ul[contains(@class, "list-chapter")]/li');
+  try {
+    final slug = url.split('/').last;
+    print('🔍 Extracted slug: $slug');
 
-  List<SChapter> chapters = [];
+    final res = await request(
+      '$baseUrl/ajax/chapter-archive?novelId=$slug',
+      headers: {"X-Requested-With": "XMLHttpRequest"},
+    );
 
-  for (var liHtml in chapterListItems) {
-    final document = parse(liHtml);
-    final aTag = document.querySelector('a');
+    print('📥 AJAX response length: ${res.length}');
+    final doc = parseHtml(res);
 
-    if (aTag != null) {
-      String? chapterUrl = aTag.attributes['href'];
-      String chapterName = aTag.text.trim();
+    final elements = doc.querySelectorAll('ul.list-chapter li a');
 
-      // Si le texte est vide ou le lien semble incorrect => on skip
-      if (chapterUrl == null || chapterUrl.isEmpty || chapterName.isEmpty) continue;
-      int skipped = 0;
-      // dans la boucle :
-      if (chapterUrl == null || chapterUrl.isEmpty || chapterName.isEmpty) {
-      skipped++;
-      continue;
-
-      // Nettoyage du lien
-      if (chapterUrl.startsWith('http')) {
-        final uri = Uri.parse(chapterUrl);
-        chapterUrl = uri.path + (uri.hasQuery ? '?${uri.query}' : '');
-      }
-
-      chapters.add(SChapter(name: chapterName, url: chapterUrl));
+    if (elements.isEmpty) {
+      print('⚠️ Aucun chapitre trouvé (ul.list-chapter li a)');
+      return [];
     }
-  }
-  @override
-  Future<String> getHtmlContent(String name, String url) async {
-    final fullUrl = url.startsWith('http') ? url : source.baseUrl + url;
-    final res = (await client.get(Uri.parse(fullUrl), headers: headers)).body;
 
-    final contentParts = xpath(res, '//div[@id="chr-content"]/p');
-    final contentHtml = contentParts.map((p) => '<p>$p</p>').join('\n');
-
-    return '<div>$contentHtml</div>';
-    print('Chapitres valides: ${chapters.length}, ignorés: $skipped');
+    return elements.reversed.map((element) {
+      final chapterUrl = element.attributes['href'] ?? '';
+      final chapterName = element.text.trim();
+      return SChapter(
+        name: chapterName,
+        url: chapterUrl.startsWith('http') ? chapterUrl : '$baseUrl$chapterUrl',
+      );
+    }).toList();
+  } catch (e, stack) {
+    print('🔥 Erreur dans getChapters: $e\n$stack');
+    return [];
   }
+}
+
 
   @override
   Future<String> cleanHtmlContent(String html) async => html;
