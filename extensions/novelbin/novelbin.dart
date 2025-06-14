@@ -4,50 +4,62 @@ import 'package:html/parser.dart' show parse;
 
 class NovelBinSource extends MProvider {
   NovelBinSource({required this.source});
+
   final MSource source;
   final Client client = Client();
 
   Map<String, String> get headers => {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0',
     'Referer': source.baseUrl,
   };
 
   @override
   bool get supportsLatest => false;
 
+  // 1) Popular
   @override
   Future<MPages> getPopular(int page) async {
-    final url = "${source.baseUrl}/sort/top-hot-novel?page=$page";
+    final url = '${source.baseUrl}/sort/top-hot-novel?page=$page';
     final res = (await client.get(Uri.parse(url), headers: headers)).body;
 
-    final titles = xpath(res, '//h3[contains(@class, "novel")]/a/text()');
-    final links = xpath(res, '//h3[contains(@class, "novel")]/a/@href');
-    final covers = xpath(res, '//img[contains(@class, "cover")]/@data-src');
+    // Scraping titres, liens, couvertures
+    final titles = xpath(res, '//h3[contains(@class, "novel") and contains(@class, "title")]/a/text()');
+    final links = xpath(res, '//h3[contains(@class, "novel") and contains(@class, "title")]/a/@href');
+    final covers = xpath(res, '//img[contains(@class, "cover") and contains(@class, "lazy")]/@data-src');
 
     List<MManga> mangaList = [];
 
     for (var i = 0; i < titles.length; i++) {
       MManga manga = MManga();
       manga.name = titles[i];
-      manga.link = links[i].startsWith("http")
-          ? links[i]
-          : '${source.baseUrl}${links[i]}';
-      manga.imageUrl = i < covers.length ? covers[i] : "";
+
+      // **Important** : garder uniquement la partie relative (ex: /b/dungeon-diver-stealing-a-monsters-power)
+      var link = links[i];
+      if (link.startsWith('http')) {
+        final uri = Uri.parse(link);
+        link = uri.path;  // Garde juste la route relative
+      }
+
+      manga.link = link;
+      manga.imageUrl = covers.length > i ? covers[i] : "";
       mangaList.add(manga);
     }
 
     return MPages(mangaList, true);
   }
 
+  // 2) Detail
   @override
   Future<MManga> getDetail(String url) async {
-    final res = (await client.get(Uri.parse(url), headers: headers)).body;
-    final title = xpath(res, '//meta[@property="og:title"]/@content').firstOrNull ?? "No Title";
-    final description = xpath(res, '//meta[@name="description"]/@content').firstOrNull ?? "";
-    final imageUrl = xpath(res, '//meta[@property="og:image"]/@content').firstOrNull ?? "";
-    final author = xpath(res, '//meta[@property="og:novel:author"]/@content').firstOrNull ?? "Unknown";
-    final genresString = xpath(res, '//meta[@property="og:novel:genre"]/@content').firstOrNull ?? "";
-    final genres = genresString.split(',').map((e) => e.trim()).toList();
+    final fullUrl = url.startsWith('http') ? url : source.baseUrl + url;
+    final res = (await client.get(Uri.parse(fullUrl), headers: headers)).body;
+
+    final title = xpath(res, '//meta[@property="og:title"]/@content').firstOrNull ?? 'No Title';
+    final description = xpath(res, '//meta[@name="description"]/@content').firstOrNull ?? '';
+    final imageUrl = xpath(res, '//meta[@property="og:image"]/@content').firstOrNull ?? '';
+    final author = xpath(res, '//meta[@property="og:novel:author"]/@content').firstOrNull ?? 'Unknown';
+    final genresString = xpath(res, '//meta[@property="og:novel:genre"]/@content').firstOrNull ?? '';
+    final genres = genresString.isNotEmpty ? genresString.split(',') : <String>[];
 
     MManga manga = MManga();
     manga.name = title;
@@ -55,54 +67,71 @@ class NovelBinSource extends MProvider {
     manga.imageUrl = imageUrl;
     manga.author = author;
     manga.genre = genres;
-    manga.link = url; // lien absolu
+    manga.link = url;
 
     return manga;
   }
 
+  // 3) Chapters - récupère la liste des chapitres à partir de la page manga
   @override
 Future<List<SChapter>> getChapters(String url) async {
-  throw Exception("getChapters() TRIGGERED avec URL: $url");
-  
-    final res = (await client.get(Uri.parse(url), headers: headers)).body;
+  final fullUrl = url.startsWith('http') ? url : source.baseUrl + url;
+  final res = (await client.get(Uri.parse(fullUrl), headers: headers)).body;
 
-    final chapterNames = xpath(res, '//ul[@id="chapterList"]/li/a/text()');
-    final chapterLinks = xpath(res, '//ul[@id="chapterList"]/li/a/@href');
+  // XPath pour récupérer tous les <li> dans toutes les <ul class="list-chapter">
+  final chapterListItems = xpath(res, '//ul[contains(@class, "list-chapter")]/li');
 
-    List<SChapter> chapters = [];
+  List<SChapter> chapters = [];
 
-    for (var i = 0; i < chapterNames.length; i++) {
-      chapters.add(SChapter(
-        name: chapterNames[i],
-        url: chapterLinks[i].startsWith("http")
-            ? chapterLinks[i]
-            : '${source.baseUrl}${chapterLinks[i]}',
-      ));
+  for (var liHtml in chapterListItems) {
+    // Pour chaque li, on récupère le href du <a> et le texte du <span class="chapter-title">
+    final document = parse(liHtml); // parser le fragment HTML du <li>
+
+    final aTag = document.querySelector('a');
+    final spanTitle = document.querySelector('span.chapter-title');
+
+    if (aTag != null && spanTitle != null) {
+      String chapterUrl = aTag.attributes['href'] ?? '';
+      String chapterName = spanTitle.text.trim();
+
+      // Convertir lien absolu en relatif
+      if (chapterUrl.startsWith('http')) {
+        final uri = Uri.parse(chapterUrl);
+        chapterUrl = uri.path + (uri.hasQuery ? '?${uri.query}' : '');
+      }
+
+      chapters.add(SChapter(name: chapterName, url: chapterUrl));
     }
-
-    return chapters;
   }
 
+  return chapters;
+}
   @override
   Future<String> getHtmlContent(String name, String url) async {
-    final res = (await client.get(Uri.parse(url), headers: headers)).body;
+    final fullUrl = url.startsWith('http') ? url : source.baseUrl + url;
+    final res = (await client.get(Uri.parse(fullUrl), headers: headers)).body;
+
     final contentParts = xpath(res, '//div[@id="chr-content"]/p');
-    final html = contentParts.map((e) => "<p>${e}</p>").join('\n');
-    return '<div>$html</div>';
+    final contentHtml = contentParts.map((p) => '<p>$p</p>').join('\n');
+
+    return '<div>$contentHtml</div>';
   }
 
   @override
   Future<String> cleanHtmlContent(String html) async => html;
+
   @override
   Future<List<MVideo>> getVideoList(String url) async => [];
+
   @override
-  List getFilterList() => [];
+  List<dynamic> getFilterList() => [];
+
   @override
-  List getSourcePreferences() => [];
+  List<dynamic> getSourcePreferences() => [];
+}
+
+extension FirstOrNull<T> on List<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }
 
 NovelBinSource main(MSource source) => NovelBinSource(source: source);
-
-extension on List<String> {
-  String? get firstOrNull => isEmpty ? null : this[0];
-}
