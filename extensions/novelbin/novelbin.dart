@@ -61,9 +61,9 @@ class NovelBinSource extends MProvider {
   }
 
   @override
-  Future<List<SChapter>> getChapters(String url) async {
-    throw Exception("DEBUG: getChapters appelé avec URL = $url");
-
+Future<List<SChapter>> getChapters(String url) async {
+  throw Exception("getChapters() TRIGGERED avec URL: $url");
+  
     final res = (await client.get(Uri.parse(url), headers: headers)).body;
 
     final chapterNames = xpath(res, '//ul[@id="chapterList"]/li/a/text()');
