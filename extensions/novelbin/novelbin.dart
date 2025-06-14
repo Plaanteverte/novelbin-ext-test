@@ -73,26 +73,32 @@ class NovelBinSource extends MProvider {
   }
 
   // 3) Chapters - récupère la liste des chapitres à partir de la page manga
-  @override
+@override
 Future<List<SChapter>> getChapters(String url) async {
   final fullUrl = url.startsWith('http') ? url : source.baseUrl + url;
   final res = (await client.get(Uri.parse(fullUrl), headers: headers)).body;
 
-  final document = parse(res);
-
-  // Sélectionne tous les <li> sous ul.list-chapter
-  final lis = document.querySelectorAll('ul.list-chapter > li');
+  final chapterListItems = xpath(res, '//ul[contains(@class, "list-chapter")]/li');
 
   List<SChapter> chapters = [];
 
-  for (var li in lis) {
-    final aTag = li.querySelector('a');
-    final spanTitle = li.querySelector('span.chapter-title');
+  for (var liHtml in chapterListItems) {
+    final document = parse(liHtml);
+    final aTag = document.querySelector('a');
 
-    if (aTag != null && spanTitle != null) {
-      String chapterUrl = aTag.attributes['href'] ?? '';
-      String chapterName = spanTitle.text.trim();
+    if (aTag != null) {
+      String? chapterUrl = aTag.attributes['href'];
+      String chapterName = aTag.text.trim();
 
+      // Si le texte est vide ou le lien semble incorrect => on skip
+      if (chapterUrl == null || chapterUrl.isEmpty || chapterName.isEmpty) continue;
+      int skipped = 0;
+      // dans la boucle :
+      if (chapterUrl == null || chapterUrl.isEmpty || chapterName.isEmpty) {
+      skipped++;
+      continue;
+
+      // Nettoyage du lien
       if (chapterUrl.startsWith('http')) {
         final uri = Uri.parse(chapterUrl);
         chapterUrl = uri.path + (uri.hasQuery ? '?${uri.query}' : '');
@@ -101,9 +107,6 @@ Future<List<SChapter>> getChapters(String url) async {
       chapters.add(SChapter(name: chapterName, url: chapterUrl));
     }
   }
-
-  return chapters;
-}
   @override
   Future<String> getHtmlContent(String name, String url) async {
     final fullUrl = url.startsWith('http') ? url : source.baseUrl + url;
@@ -113,6 +116,7 @@ Future<List<SChapter>> getChapters(String url) async {
     final contentHtml = contentParts.map((p) => '<p>$p</p>').join('\n');
 
     return '<div>$contentHtml</div>';
+    print('Chapitres valides: ${chapters.length}, ignorés: $skipped');
   }
 
   @override
