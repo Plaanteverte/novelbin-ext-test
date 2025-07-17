@@ -12,7 +12,7 @@
   "quality": "N/A",
   "baseUrl": "https://massnovel.fr/",
   "searchBaseUrl": "https://massnovel.fr/?s=%s&post_type%5B%5D=wp-manga",
-  "scriptUrl": "https://raw.githubusercontent.com/plaanteverte/novelbin-ext-test/main/massnovel.sora.js",
+  "scriptUrl": "https://raw.githubusercontent.com/plaanteverte/novelbin-ext-test/main/extensions/massnovel.js",
   "type": "novels",
   "asyncJS": true,
   "novel": true
