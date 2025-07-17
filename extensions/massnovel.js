@@ -110,10 +110,11 @@ async function extractText(url) {
     }
 }
 
+// Simplified fetch without fetchv2 to ensure Response methods
 async function soraFetch(url, options = { headers: {}, method: 'GET', body: null }) {
-    try {
-        return await fetchv2(url, options.headers, options.method, options.body);
-    } catch {
-        return fetch(url, options);
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.status}`);
     }
+    return response;
 }
