@@ -8,6 +8,11 @@ async function searchResults(keyword) {
         const encoded = encodeURIComponent(keyword);
         const url = `https://massnovel.fr/?s=${encoded}&post_type%5B%5D=wp-manga`;
         const response = await soraFetch(url);
+        // --- Exposition des handlers pour Sora ---
+window.searchResults   = searchResults;
+window.extractDetails  = extractDetails;
+window.extractChapters = extractChapters;
+window.extractText     = extractText;
         const html = await response.text();
 
         const results = [];
@@ -145,5 +150,3 @@ async function soraFetch(url, options = { headers: {}, method: 'GET', body: null
 // extractDetails('https://massnovel.fr/mushoku-tensei/').then(console.log);
 // extractChapters('https://massnovel.fr/mushoku-tensei/').then(console.log);
 // extractText('https://massnovel.fr/mushoku-tensei/chapter-1/').then(console.log);
-
-export { searchResults, extractDetails, extractChapters, extractText };
