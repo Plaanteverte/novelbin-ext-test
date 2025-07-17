@@ -1,25 +1,19 @@
-[
-  {
-    "name": "Novelbin",
-    "id": 2800000000,
-    "baseUrl": "https://novelbin.com",
-    "lang": "en",
-    "typeSource": "single",
-    "iconUrl": "https://novelbin.com/img/favicon.ico?v=1.68",
-    "dateFormat": "",
-    "dateFormatLocale": "",
-    "isNsfw": false,
-    "hasCloudflare": false,
-    "sourceCodeUrl": "https://raw.githubusercontent.com/Plaanteverte/novelbin-ext-test/refs/heads/main/extensions/novelbin/novelbin.dart",
-    "apiUrl": "",
-    "version": "0.6.7",
-    "isManga": false,
-    "itemType": 2,
-    "isFullData": false,
-    "appMinVerReq": "0.5.0",
-    "additionalParams": "",
-    "sourceCodeLanguage": 0,
-    "path": "extensions/novelbin/",
-    "notes": ""
-  }
-]
+{
+  "sourceName": "MassNovel",
+  "iconUrl": "https://massnovel.fr/wp-content/uploads/2021/06/cropped-logo-192x192.png",
+  "author": {
+    "name": "plaanteverte",
+    "icon": "https://github.com/plaanteverte.png",
+    "url": "https://github.com/plaanteverte"
+  },
+  "version": "1.0.0",
+  "language": "Français",
+  "streamType": "novels",
+  "quality": "N/A",
+  "baseUrl": "https://massnovel.fr/",
+  "searchBaseUrl": "https://massnovel.fr/?s=%s&post_type%5B%5D=wp-manga",
+  "scriptUrl": "https://raw.githubusercontent.com/plaanteverte/novelbin-ext-test/main/massnovel.sora.js",
+  "type": "novels",
+  "asyncJS": true,
+  "novel": true
+}
